@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Secret 💖</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; overflow: hidden; }
+    body {
+      background: #fff;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      color: #333;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 1rem; /* leave horizontal padding */
+    }
+    #confetti-canvas {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      pointer-events: none;
+      z-index: 0;
+    }
+    .card {
+      background: #fafafa;
+      border: 1px solid #eee;
+      border-radius: 24px;
+      padding: 2rem;
+      width: 100%; max-width: 380px;
+      margin: 0 auto;
+      text-align: center;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+      position: relative;
+      z-index: 1;
+      transform: scale(1);
+      transition: transform 0.3s ease;
+    }
+    .card.reveal { transform: scale(1.05); }
+    .card h1 {
+      font-size: 1.8rem; margin-bottom: 1.2rem; line-height: 1.3; color: #222;
+    }
+    .btn {
+      padding: 0.8rem 1.8rem; font-size: 1.1rem;
+      background: #ff4081; color: #fff; border: none;
+      border-radius: 50px; cursor: pointer;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+      transition: transform 0.2s, background 0.3s;
+    }
+    .btn:hover { transform: scale(1.05); background: #e73370; }
+    #loveText {
+      display: none;
+      margin-top: 1.5rem; font-size: 1.9rem;
+      color: #e91e63; opacity: 0;
+      transform: scale(0.5);
+      transition: opacity 0.6s ease, transform 0.6s ease;
+      word-wrap: break-word;
+    }
+    @media (max-width: 400px) {
+      .card { padding: 1.5rem; }
+      .card h1 { font-size: 1.6rem; }
+      .btn { font-size: 1rem; padding: 0.7rem 1.5rem; }
+      #loveText { font-size: 1.7rem; }
+    }
+  </style>
+</head>
+<body>
+  <canvas id="confetti-canvas"></canvas>
+  <div class="card" id="card">
+    <h1>I have a secret that you should know</h1>
+    <button class="btn" id="revealBtn">Find out 💌</button>
+    <p id="loveText">Я тебе кохаю! 💖</p>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('confetti-canvas');
+    const ctx = canvas.getContext('2d');
+    let W, H;
+
+    function resizeCanvas() {
+      W = canvas.width = window.innerWidth;
+      H = canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    class Confetti {
+      constructor(cardRect) { this.cardRect = cardRect; this.reset(); }
+      reset() {
+        this.x = Math.random() * W;
+        this.y = -Math.random() * H * 0.2;
+        this.size = 5 + Math.random() * 5;
+        this.vx = (Math.random() - 0.5) * 2;
+        this.vy = 2 + Math.random() * 2;
+        this.color = `hsl(${Math.random() * 360},70%,60%)`;
+      }
+      update() {
+        this.vy += 0.05;
+        this.x += this.vx;
+        this.y += this.vy;
+        const { top, left, right } = this.cardRect;
+        if (this.y + this.size > top && this.x > left && this.x < right) {
+          this.y = top - this.size;
+          this.vy *= -0.6;
+          this.vx *= 0.7;
+        }
+        if (this.y > H || this.x < -this.size || this.x > W + this.size) this.reset();
+      }
+      draw() {
+        ctx.fillStyle = this.color;
+        ctx.fillRect(this.x, this.y, this.size, this.size);
+      }
+    }
+
+    let confettis = [];
+    let animating = false;
+
+    function startConfetti() {
+      const cardRect = document.getElementById('card').getBoundingClientRect();
+      confettis = Array.from({ length: 80 }, () => new Confetti(cardRect));
+      if (!animating) {
+        animating = true;
+        requestAnimationFrame(render);
+      }
+    }
+
+    function render() {
+      ctx.clearRect(0, 0, W, H);
+      confettis.forEach(c => { c.update(); c.draw(); });
+      if (animating) requestAnimationFrame(render);
+    }
+
+    document.getElementById('revealBtn').addEventListener('click', () => {
+      const text = document.getElementById('loveText');
+      const card = document.getElementById('card');
+      text.style.display = 'block';
+      setTimeout(() => {
+        text.style.opacity = '1';
+        text.style.transform = 'scale(1)';
+        card.classList.add('reveal');
+        startConfetti();
+      }, 10);
+    });
+  </script>
+</body>
+</html>
