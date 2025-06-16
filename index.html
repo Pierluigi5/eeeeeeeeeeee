@@ -6,107 +6,122 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-family: sans-serif;
       background: #f9f9f9;
-      margin: 0;
       padding: 2rem;
       display: flex;
       flex-direction: column;
       align-items: center;
     }
-    textarea {
+    textarea, select, button {
       width: 100%;
       max-width: 600px;
-      height: 150px;
-      padding: 1rem;
+      margin: 0.5rem 0;
+      padding: 0.8rem;
       font-size: 1rem;
-      border-radius: 12px;
-      border: 1px solid #ccc;
-      resize: vertical;
-    }
-    select, button {
-      font-size: 1rem;
-      padding: 0.5rem 1rem;
       border-radius: 8px;
       border: 1px solid #ccc;
-      margin-top: 1rem;
-      margin-right: 0.5rem;
     }
     button {
-      background-color: #000;
+      background: #333;
       color: white;
       cursor: pointer;
     }
     button:hover {
-      background-color: #333;
+      background: black;
     }
-    .output {
-      background: white;
-      border-radius: 12px;
-      padding: 1rem;
-      margin-top: 1.5rem;
+    .quiz-container {
       max-width: 600px;
-      white-space: pre-wrap;
+      background: white;
+      padding: 1rem;
+      border-radius: 12px;
       border: 1px solid #ddd;
+      margin-top: 1rem;
+    }
+    .question {
+      margin-bottom: 1rem;
+    }
+    .correct {
+      background-color: #c8f7c5;
+    }
+    .wrong {
+      background-color: #f7c5c5;
     }
   </style>
 </head>
 <body>
   <h1>ExamTrainer AI</h1>
+
   <textarea id="input" placeholder="Inserisci un testo da trasformare in quiz..."></textarea>
 
-  <div>
-    <select id="mode">
-      <option value="quiz">Quiz</option>
-      <option value="flashcard">Flashcard</option>
-      <option value="vero_falso">Vero/Falso</option>
-    </select>
+  <select id="language">
+    <option value="it">🇮🇹 Italiano</option>
+    <option value="en">🇬🇧 English</option>
+  </select>
 
-    <select id="language">
-      <option value="it">🇮🇹 Italiano</option>
-      <option value="en">🇬🇧 English</option>
-    </select>
+  <button onclick="generateQuiz()">Genera Quiz</button>
 
-    <button onclick="generate()">Genera</button>
-  </div>
-
-  <div id="output" class="output">Il risultato apparirà qui...</div>
+  <div id="quiz" class="quiz-container"></div>
+  <button id="submit" style="display:none;" onclick="checkAnswers()">Verifica Risposte</button>
 
   <script>
-    async function generate() {
-      const input = document.getElementById("input").value;
+    let correctAnswers = [];
+
+    async function generateQuiz() {
+      const text = document.getElementById("input").value;
       const language = document.getElementById("language").value;
-      const mode = document.getElementById("mode").value;
-      const output = document.getElementById("output");
+      const quizDiv = document.getElementById("quiz");
+      document.getElementById("submit").style.display = "none";
+      quizDiv.innerHTML = "Attendi...";
 
-      output.textContent = "Attendi...";
+      const res = await fetch("https://examtrainer-api-244481818405.europe-west4.run.app/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: text, language: language, mode: "quiz" })
+      });
 
-      try {
-        const response = await fetch("https://examtrainer-api-244481818405.europe-west4.run.app/generate", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            text: input,
-            language,
-            mode
-          })
+      const data = await res.json();
+      if (data.quiz) {
+        quizDiv.innerHTML = "";
+        correctAnswers = [];
+
+        data.quiz.forEach((q, index) => {
+          correctAnswers.push(q.answer);
+          const questionDiv = document.createElement("div");
+          questionDiv.className = "question";
+          questionDiv.innerHTML = `<strong>${index + 1}. ${q.question}</strong><br>` +
+            q.options.map((opt, i) => `
+              <label>
+                <input type="radio" name="q${index}" value="${i}"> ${opt}
+              </label><br>`).join("");
+          quizDiv.appendChild(questionDiv);
         });
 
-        const data = await response.json();
-
-        // ✅ Supporta sia .output che .result per compatibilità
-        if (data.output || data.result) {
-          output.textContent = data.output || data.result;
-        } else if (data.error) {
-          output.textContent = "Errore: " + data.error;
-        } else {
-          output.textContent = "Errore sconosciuto: nessun dato ricevuto.";
-        }
-      } catch (err) {
-        output.textContent = "Errore durante la richiesta: " + err.message;
+        document.getElementById("submit").style.display = "block";
+      } else {
+        quizDiv.innerHTML = "Errore: " + (data.error || "Nessun quiz generato.");
       }
+    }
+
+    function checkAnswers() {
+      const quizDiv = document.getElementById("quiz");
+      const questions = quizDiv.querySelectorAll(".question");
+
+      questions.forEach((questionDiv, i) => {
+        const radios = questionDiv.querySelectorAll(`input[name="q${i}"]`);
+        let selected = -1;
+
+        radios.forEach((r, idx) => {
+          if (r.checked) selected = idx;
+          r.disabled = true;
+        });
+
+        if (selected === correctAnswers[i]) {
+          questionDiv.classList.add("correct");
+        } else {
+          questionDiv.classList.add("wrong");
+        }
+      });
     }
   </script>
 </body>
