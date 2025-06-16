@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
   <title>ExamTrainer AI</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -12,12 +12,7 @@
       padding: 2rem;
       display: flex;
       flex-direction: column;
-      gap: 1rem;
       align-items: center;
-    }
-    h1 {
-      font-size: 1.8rem;
-      margin-bottom: 0.5rem;
     }
     textarea {
       width: 100%;
@@ -34,6 +29,7 @@
       padding: 0.5rem 1rem;
       border-radius: 8px;
       border: 1px solid #ccc;
+      margin-top: 1rem;
       margin-right: 0.5rem;
     }
     button {
@@ -44,28 +40,14 @@
     button:hover {
       background-color: #333;
     }
-    .quiz-container {
+    .output {
       background: white;
       border-radius: 12px;
       padding: 1rem;
+      margin-top: 1.5rem;
       max-width: 600px;
+      white-space: pre-wrap;
       border: 1px solid #ddd;
-    }
-    .question {
-      margin-bottom: 1.5rem;
-    }
-    .footer {
-      font-size: 0.8rem;
-      color: #aaa;
-      margin-top: 2rem;
-    }
-    .correct {
-      color: green;
-      font-weight: bold;
-    }
-    .wrong {
-      color: red;
-      font-weight: bold;
     }
   </style>
 </head>
@@ -76,81 +58,55 @@
   <div>
     <select id="mode">
       <option value="quiz">Quiz</option>
+      <option value="flashcard">Flashcard</option>
+      <option value="vero_falso">Vero/Falso</option>
     </select>
+
     <select id="language">
       <option value="it">🇮🇹 Italiano</option>
       <option value="en">🇬🇧 English</option>
     </select>
+
     <button onclick="generate()">Genera</button>
   </div>
 
-  <div id="quiz" class="quiz-container"></div>
-  <button onclick="checkAnswers()">Verifica</button>
-
-  <div class="footer">Powered by Gemini – Hosted on Google Cloud</div>
+  <div id="output" class="output">Il risultato apparirà qui...</div>
 
   <script>
-    let correctAnswers = [];
-
     async function generate() {
       const input = document.getElementById("input").value;
       const language = document.getElementById("language").value;
       const mode = document.getElementById("mode").value;
-      const quiz = document.getElementById("quiz");
+      const output = document.getElementById("output");
 
-      quiz.innerHTML = "Attendi...";
-      correctAnswers = [];
+      output.textContent = "Attendi...";
 
       try {
         const response = await fetch("https://examtrainer-api-244481818405.europe-west4.run.app/generate", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ text: input, language, mode })
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            text: input,
+            language,
+            mode
+          })
         });
 
         const data = await response.json();
 
-        if (data.questions) {
-          quiz.innerHTML = "";
-          data.questions.forEach((q, i) => {
-            correctAnswers.push(q.answer); // esempio: "c"
-            const div = document.createElement("div");
-            div.className = "question";
-            div.innerHTML = `
-              <p><strong>${i + 1}. ${q.question}</strong></p>
-              ${Object.entries(q.options).map(([key, val]) =>
-                `<label><input type="radio" name="q${i}" value="${key}"> ${key}) ${val}</label><br>`
-              ).join("")}
-            `;
-            quiz.appendChild(div);
-          });
+        // ✅ Supporta sia .output che .result per compatibilità
+        if (data.output || data.result) {
+          output.textContent = data.output || data.result;
+        } else if (data.error) {
+          output.textContent = "Errore: " + data.error;
         } else {
-          quiz.innerHTML = "Errore: formato risposta non valido.";
+          output.textContent = "Errore sconosciuto: nessun dato ricevuto.";
         }
       } catch (err) {
-        quiz.innerHTML = "Errore durante la richiesta: " + err.message;
+        output.textContent = "Errore durante la richiesta: " + err.message;
       }
-    }
-
-    function checkAnswers() {
-      const quiz = document.getElementById("quiz");
-      const questions = quiz.querySelectorAll(".question");
-
-      questions.forEach((qDiv, i) => {
-        const selected = qDiv.querySelector("input[name='q" + i + "']:checked");
-        const result = document.createElement("p");
-        if (!selected) {
-          result.textContent = "❌ Nessuna risposta selezionata.";
-          result.className = "wrong";
-        } else if (selected.value === correctAnswers[i]) {
-          result.textContent = "✅ Corretto!";
-          result.className = "correct";
-        } else {
-          result.textContent = `❌ Sbagliato. Risposta corretta: ${correctAnswers[i]})`;
-          result.className = "wrong";
-        }
-        qDiv.appendChild(result);
-      });
     }
   </script>
 </body>
