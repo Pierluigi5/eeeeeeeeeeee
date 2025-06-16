@@ -1,171 +1,118 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="it">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8">
   <title>ExamTrainer AI</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    :root {
-      --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      --primary: #007aff;
-      --background: #f9f9f9;
-      --text: #1c1c1e;
-      --gray: #e5e5ea;
-    }
-
     body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f9f9f9;
       margin: 0;
-      font-family: var(--font);
-      background-color: var(--background);
-      color: var(--text);
-      padding: 1.5rem;
+      padding: 2rem;
       display: flex;
       flex-direction: column;
-      min-height: 100vh;
+      gap: 1rem;
+      align-items: center;
     }
-
     h1 {
       font-size: 1.8rem;
-      text-align: center;
-      margin-bottom: 2rem;
+      margin-bottom: 0.5rem;
     }
-
-    .section {
-      margin-bottom: 1.5rem;
-      display: flex;
-      flex-direction: column;
-    }
-
-    textarea, button {
-      font-size: 1rem;
-      padding: 1rem;
-      border-radius: 16px;
-      border: 1px solid var(--gray);
-      box-sizing: border-box;
-      appearance: none;
-    }
-
     textarea {
+      width: 100%;
+      max-width: 600px;
+      height: 150px;
+      padding: 1rem;
+      font-size: 1rem;
+      border-radius: 12px;
+      border: 1px solid #ccc;
       resize: vertical;
-      min-height: 120px;
     }
-
-    button.generate {
-      background-color: var(--primary);
-      color: white;
-      border: none;
-      cursor: pointer;
-      transition: background-color 0.2s ease-in-out;
-      margin-top: 1rem;
-    }
-
-    button.generate:hover {
-      background-color: #005fcc;
-    }
-
-    #result {
-      white-space: pre-wrap;
-      line-height: 1.6;
-      background-color: #ffffff;
-      padding: 1.2rem;
-      border-radius: 16px;
-      border: 1px solid var(--gray);
-    }
-
-    .bottom-panel {
-      position: fixed;
-      bottom: 1rem;
-      left: 50%;
-      transform: translateX(-50%);
-      background: white;
-      border: 1px solid var(--gray);
-      border-radius: 9999px;
+    select, button {
+      font-size: 1rem;
       padding: 0.5rem 1rem;
-      display: flex;
-      align-items: center;
-      gap: 0.8rem;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-      z-index: 10;
-      flex-wrap: wrap;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      margin-right: 0.5rem;
     }
-
-    .bottom-panel select,
-    .bottom-panel .lang-buttons {
-      padding: 0.4rem 0.6rem;
-      font-size: 0.9rem;
-      border-radius: 9999px;
-      border: 1px solid var(--gray);
-      background: #fff;
-    }
-
-    .lang-buttons button {
-      background: none;
-      border: none;
-      font-size: 1.2rem;
+    button {
+      background-color: #000;
+      color: white;
       cursor: pointer;
-      padding: 0.2rem 0.4rem;
     }
-
-    @media (max-width: 600px) {
-      .bottom-panel {
-        flex-direction: column;
-        gap: 0.4rem;
-        padding: 0.6rem;
-      }
+    button:hover {
+      background-color: #333;
+    }
+    .output {
+      background: white;
+      border-radius: 12px;
+      padding: 1rem;
+      max-width: 600px;
+      white-space: pre-wrap;
+      border: 1px solid #ddd;
+    }
+    .footer {
+      font-size: 0.8rem;
+      color: #aaa;
+      margin-top: 2rem;
     }
   </style>
 </head>
 <body>
-
-  <h1 id="title">ExamTrainer AI</h1>
-
-  <div class="section">
-    <textarea id="text" placeholder="Inserisci il testo / Paste your content..."></textarea>
-  </div>
-
-  <div class="section">
-    <button class="generate" onclick="generate()">Genera</button>
-  </div>
-
-  <div class="section">
-    <div id="result"></div>
-  </div>
-
-  <div class="bottom-panel">
-    <div class="lang-buttons">
-      <button onclick="setLang('it')">🇮🇹</button>
-      <button onclick="setLang('en')">🇬🇧</button>
-    </div>
+  <h1>ExamTrainer AI</h1>
+  <textarea id="input" placeholder="Inserisci un testo da trasformare in quiz..."></textarea>
+  
+  <div>
     <select id="mode">
       <option value="quiz">Quiz</option>
       <option value="flashcard">Flashcard</option>
       <option value="vero_falso">Vero/Falso</option>
     </select>
+
+    <select id="language">
+      <option value="it">🇮🇹 Italiano</option>
+      <option value="en">🇬🇧 English</option>
+    </select>
+
+    <button onclick="generate()">Generate</button>
   </div>
 
+  <div id="output" class="output">Risultato generato apparirà qui...</div>
+
+  <div class="footer">Powered by Hugging Face – Hosted on Google Cloud</div>
+
   <script>
-    let language = 'it';
-
-    function setLang(lang) {
-      language = lang;
-      const placeholder = lang === 'it' ? 'Inserisci il testo...' : 'Enter your text...';
-      document.getElementById('text').placeholder = placeholder;
-    }
-
     async function generate() {
-      const text = document.getElementById('text').value;
-      const mode = document.getElementById('mode').value;
+      const input = document.getElementById("input").value;
+      const language = document.getElementById("language").value;
+      const mode = document.getElementById("mode").value;
+      const output = document.getElementById("output");
 
-      const response = await fetch('https://examtrainer-api-244481818405.europe-west4.run.app/generate', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ text, language, mode })
-      });
+      output.textContent = "Attendi...";
 
-      const data = await response.json();
-      document.getElementById('result').textContent = data.output || data.error;
+      try {
+        const response = await fetch("https://examtrainer-api-244481818405.europe-west4.run.app/generate", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            text: input,
+            language: language,
+            mode: mode
+          })
+        });
+
+        const data = await response.json();
+        if (data.output) {
+          output.textContent = data.output;
+        } else {
+          output.textContent = "Errore: " + (data.error || "Nessun output ricevuto.");
+        }
+      } catch (err) {
+        output.textContent = "Errore durante la richiesta: " + err.message;
+      }
     }
   </script>
 </body>
