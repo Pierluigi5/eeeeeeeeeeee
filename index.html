@@ -5,77 +5,142 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ExamTrainer AI</title>
   <style>
+    :root {
+      --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      --primary: #007aff;
+      --background: #f9f9f9;
+      --text: #1c1c1e;
+      --gray: #e5e5ea;
+    }
+
     body {
       margin: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      background-color: #f9f9f9;
+      font-family: var(--font);
+      background-color: var(--background);
+      color: var(--text);
+      padding: 1.5rem;
       display: flex;
       flex-direction: column;
-      align-items: center;
-      padding: 2rem;
-      color: #333;
+      min-height: 100vh;
     }
-    .container {
-      max-width: 600px;
-      width: 100%;
-      background: white;
-      border-radius: 20px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-      padding: 2rem;
-    }
+
     h1 {
       font-size: 1.8rem;
-      margin-bottom: 1rem;
       text-align: center;
+      margin-bottom: 2rem;
     }
-    textarea, select, button {
-      width: 100%;
-      padding: 1rem;
-      border-radius: 12px;
-      border: 1px solid #ddd;
+
+    .section {
+      margin-bottom: 1.5rem;
+      display: flex;
+      flex-direction: column;
+    }
+
+    textarea, button {
       font-size: 1rem;
-      margin-bottom: 1rem;
+      padding: 1rem;
+      border-radius: 16px;
+      border: 1px solid var(--gray);
       box-sizing: border-box;
+      appearance: none;
     }
-    button {
-      background-color: #007aff;
+
+    textarea {
+      resize: vertical;
+      min-height: 120px;
+    }
+
+    button.generate {
+      background-color: var(--primary);
       color: white;
       border: none;
       cursor: pointer;
       transition: background-color 0.2s ease-in-out;
+      margin-top: 1rem;
     }
-    button:hover {
+
+    button.generate:hover {
       background-color: #005fcc;
     }
-    .output {
-      background: #f1f1f1;
-      border-radius: 12px;
-      padding: 1rem;
+
+    #result {
       white-space: pre-wrap;
-      font-size: 1rem;
+      line-height: 1.6;
+      background-color: #ffffff;
+      padding: 1.2rem;
+      border-radius: 16px;
+      border: 1px solid var(--gray);
     }
-    .lang-toggle {
+
+    .bottom-panel {
+      position: fixed;
+      bottom: 1rem;
+      left: 50%;
+      transform: translateX(-50%);
+      background: white;
+      border: 1px solid var(--gray);
+      border-radius: 9999px;
+      padding: 0.5rem 1rem;
       display: flex;
-      justify-content: space-between;
-      margin-bottom: 1rem;
+      align-items: center;
+      gap: 0.8rem;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+      z-index: 10;
+      flex-wrap: wrap;
+    }
+
+    .bottom-panel select,
+    .bottom-panel .lang-buttons {
+      padding: 0.4rem 0.6rem;
+      font-size: 0.9rem;
+      border-radius: 9999px;
+      border: 1px solid var(--gray);
+      background: #fff;
+    }
+
+    .lang-buttons button {
+      background: none;
+      border: none;
+      font-size: 1.2rem;
+      cursor: pointer;
+      padding: 0.2rem 0.4rem;
+    }
+
+    @media (max-width: 600px) {
+      .bottom-panel {
+        flex-direction: column;
+        gap: 0.4rem;
+        padding: 0.6rem;
+      }
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h1 id="title">ExamTrainer AI</h1>
-    <div class="lang-toggle">
-      <button onclick="setLang('it')">🇮🇹 Italiano</button>
-      <button onclick="setLang('en')">🇬🇧 English</button>
+
+  <h1 id="title">ExamTrainer AI</h1>
+
+  <div class="section">
+    <textarea id="text" placeholder="Inserisci il testo / Paste your content..."></textarea>
+  </div>
+
+  <div class="section">
+    <button class="generate" onclick="generate()">Genera</button>
+  </div>
+
+  <div class="section">
+    <div id="result"></div>
+  </div>
+
+  <div class="bottom-panel">
+    <div class="lang-buttons">
+      <button onclick="setLang('it')">🇮🇹</button>
+      <button onclick="setLang('en')">🇬🇧</button>
     </div>
-    <textarea id="text" rows="6" placeholder="Inserisci il testo... / Enter your text..."></textarea>
     <select id="mode">
       <option value="quiz">Quiz</option>
       <option value="flashcard">Flashcard</option>
-      <option value="vero_falso">Vero/Falso - True/False</option>
+      <option value="vero_falso">Vero/Falso</option>
     </select>
-    <button onclick="generate()">Genera / Generate</button>
-    <div id="result" class="output"></div>
   </div>
 
   <script>
@@ -83,8 +148,8 @@
 
     function setLang(lang) {
       language = lang;
-      document.getElementById('title').textContent = lang === 'it' ? 'ExamTrainer AI' : 'ExamTrainer AI';
-      document.getElementById('text').placeholder = lang === 'it' ? 'Inserisci il testo...' : 'Enter your text...';
+      const placeholder = lang === 'it' ? 'Inserisci il testo...' : 'Enter your text...';
+      document.getElementById('text').placeholder = placeholder;
     }
 
     async function generate() {
